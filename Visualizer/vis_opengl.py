@@ -99,10 +99,17 @@ class Terrain(object):
         if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
             QApplication.instance().exec() # PyQT API changed (exec_ became exec)
 
-    def animate(self, frametime=15):
+    def animate(self, frametime=None):
+        if frametime is None:
+            # Calculate the frame time based on audio length
+            audio_duration = librosa.get_duration(y=self.audio_data, sr=self.sr)
+            num_frames = 1600  # Change as needed
+            frame_time = audio_duration / num_frames
+            frametime = frame_time * 1000  # Convert to ms
+
         timer = QtCore.QTimer()
         timer.timeout.connect(self.update_mesh)
-        timer.start(frametime)
+        timer.start(round(frametime)) # no floats allowed, unfrtunately
         self.start()
 
 if __name__ == '__main__':
