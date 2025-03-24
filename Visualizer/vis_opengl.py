@@ -1,24 +1,18 @@
 import numpy as np
-import librosa # loading audio
+import librosa  # loading audio
 from opensimplex import OpenSimplex
 import pyqtgraph.opengl as gl
 from pyqtgraph.Qt import QtCore, QtGui
 from PyQt6.QtWidgets import QApplication
 import sys
-
-# This is for streaming the song
-import struct
-import pygame
-import pyaudio
+import soundfile as sf
 
 class Terrain(object):
     def __init__(self, audio_file_path: str):
-        pygame.mixer.init()
-
         self.audio_file_path = audio_file_path
         self.audio_data, self.sr = librosa.load(audio_file_path, sr=44100, mono=True)
         self.frame_idx = 0
-        self.sound = pygame.mixer.Sound(self.audio_file_path)
+
 
         self.app = QApplication(sys.argv)
         self.window = gl.GLViewWidget()
@@ -34,22 +28,11 @@ class Terrain(object):
         self.nfaces = len(self.ypoints)
 
         self.CHUNK = len(self.xpoints) * len(self.ypoints)
-        self.noise = OpenSimplex(seed=324) # Perlin Noise object
-        verts, faces, colors = self.mesh() # create mesh
-
-        # Stream Object
-        self.p = pyaudio.PyAudio()
-        self.stream = self.p.open(
-            format=pyaudio.paInt16,
-            channels=1,
-            rate=44100,
-            input=True,
-            output=True,
-            frames_per_buffer=self.CHUNK,
-        )
+        self.noise = OpenSimplex(seed=324)  # Perlin Noise object
+        verts, faces, colors = self.mesh()  # create mesh
 
         self.main_mesh = gl.GLMeshItem(
-            facces=faces,
+            faces=faces,
             vertexes=verts,
             faceColor=colors,
             drawEdges=True,
@@ -57,23 +40,30 @@ class Terrain(object):
         )
         self.main_mesh.setGLOptions('additive')
         self.window.addItem(self.main_mesh)
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.update_mesh)
 
+        self.total_chunks = len(self.audio_data) // self.CHUNK
+        if len(self.audio_data) % self.CHUNK != 0:
+            self.total_chunks += 1  # Add an extra chunk for the remainder
+        self.audio_data = np.pad(self.audio_data, (0, self.CHUNK * self.total_chunks))
+        
+        with sf.SoundFile(audio_file_path) as f:
+            self.audio_duration = len(f) / f.samplerate
+            print(f"Correct duration: {self.audio_duration} seconds")
+
+        self.chunk_duration = (self.audio_duration * 1000) / self.total_chunks  # in milliseconds
+        
     def get_audio_chunk(self):
         start = self.frame_idx
-        end = min(start + self.CHUNK, len(self.audio_data)) # don't go out of bounds
-        chungus = self.audio_data[start:end] # extract the chungus
-
-        if len(chungus) < self.CHUNK:
-            chungus = np.pad(chungus, (0, self.CHUNK - len(chungus)))
-
+        end = start + self.CHUNK
+        chungus = self.audio_data[start:end]  # extract the chunk
         self.frame_idx += self.CHUNK
-        return  chungus * 12.65  # Scale waveform height
-    
-    def mesh(self, offset: float=0.0, wf_data=None):
-        if wf_data is None: wf_data = np.ones((len(self.xpoints), len(self.ypoints)))  # Default flat terrain
-        else: wf_data = wf_data.reshape((len(self.xpoints), len(self.ypoints)))
+        return chungus * 9.39  # Scale waveform height
+
+    def mesh(self, offset: float = 0.0, wf_data=None):
+        if wf_data is None:
+            wf_data = np.ones((len(self.xpoints), len(self.ypoints)))  # Default flat terrain
+        else:
+            wf_data = wf_data.reshape((len(self.xpoints), len(self.ypoints)))
 
         faces, colors = [], []
         vertices = np.array([
@@ -108,7 +98,7 @@ class Terrain(object):
             self.timer.stop()  # Stop the animation
             QtCore.QTimer.singleShot(1000, self.window.close)  # Close the window after 1 sec
             return
-        
+
         wf_data = self.get_audio_chunk()
         verts, faces, colors = self.mesh(offset=self.offset, wf_data=wf_data)
         self.main_mesh.setMeshData(vertexes=verts, faces=faces, faceColors=colors)
@@ -116,23 +106,19 @@ class Terrain(object):
 
     def start(self):
         if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-            QApplication.instance().exec() # PyQT API changed (exec_ became exec)
+            QApplication.instance().exec()  # PyQT API changed (exec_ became exec)
 
-    def animate(self, frametime=None):
-        if frametime is None:
-            # Calculate the frame time based on audio length
-            audio_duration = librosa.get_duration(y=self.audio_data, sr=self.sr)
-            num_frames = 1600  # Change as needed
-            frame_time = audio_duration / num_frames
-            frametime = frame_time * 1000  # Convert to ms
-
+    def animate(self):
+        # Start the timer with the calculated chunk duration
         timer = QtCore.QTimer()
         timer.timeout.connect(self.update_mesh)
-        timer.start(round(frametime)) # no floats allowed, unfrtunately
-        self.sound.play()  # Start audio playback
+        timer.start(int(self.chunk_duration))
+        print("Song duration: ", self.audio_duration)
+        print("Chunk duration: ", self.chunk_duration)
+        print("Checking for synchronization:", self.chunk_duration * self.total_chunks)
         self.start()
 
 if __name__ == '__main__':
-    audio_file_path = "../TrainingSongs/Fearless/LoveStory.mp3" # change this later!!
+    audio_file_path = "../TrainingSongs/Fearless/LoveStory.mp3"  # change this later!!
     terrain = Terrain(audio_file_path)
     terrain.animate()
