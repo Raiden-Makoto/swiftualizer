@@ -27,6 +27,7 @@ def search_songs(artist: str="Taylor Swift"):
 def get_lyrics(song_url):
     response = requests.get(song_url)
     soup = BeautifulSoup(response.text, 'html.parser')
+    print(response.text)
     lyrics_div = soup.find('div', class_='lyrics')
     if lyrics_div:
         return lyrics_div.get_text()
