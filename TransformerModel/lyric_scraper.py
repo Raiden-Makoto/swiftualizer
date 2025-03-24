@@ -24,5 +24,15 @@ def search_songs(artist: str="Taylor Swift"):
         print("Error in API response.")
         return None
     
+def get_lyrics(song_url):
+    response = requests.get(song_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    lyrics_div = soup.find('div', class_='lyrics')
+    if lyrics_div:
+        return lyrics_div.get_text()
+    else:
+        print("Couldn't find lyrics")
+        return None
+    
 if __name__ == "__main__":
     scraped = search_songs()
