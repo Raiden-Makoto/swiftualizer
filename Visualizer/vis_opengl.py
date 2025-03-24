@@ -14,7 +14,7 @@ class Terrain(object):
 
         self.app = QApplication(sys.argv)
         self.window = gl.GLViewWidget()
-        self.window.setWindowTitle('Terrain')
+        self.window.setWindowTitle('Swiftualizer')
         self.window.setGeometry(0, 110, 1920, 1080)
         self.window.setCameraPosition(distance=30, elevation=12)
         self.window.show()
@@ -97,7 +97,7 @@ class Terrain(object):
 
     def start(self):
         if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-            QtGui.QApplication.instance().exec_()
+            QApplication.instance().exec() # PyQT API changed (exec_ became exec)
 
     def animate(self, frametime=15):
         timer = QtCore.QTimer()
