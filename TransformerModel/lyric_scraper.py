@@ -34,5 +34,48 @@ def get_lyrics(song_url):
         print("Couldn't find lyrics")
         return None
     
+def fetch_all_lyrics(artist):
+    song_data = search_songs(artist)
+    if not song_data: return []
+    songs = song_data["response"]["hits"]
+    all_lyrics = []
+    for song in songs:
+        song_url = song["result"]["url"]
+        lyrics = get_lyrics(song_url)
+        if lyrics:
+            title = song_data['title']
+            all_lyrics.append({"title": title, "lyrics": lyrics})
+            print(f"Fetched lyrics for: {title}")
+    
+    return all_lyrics
+
+def clean_lyrics(text):
+    text = text.lower()
+    text = re.sub(r"\[.*?\]", "", text)  # Remove section labels
+    text = re.sub(r"[^\w\s']", "", text)  # Remove punctuation
+    text = re.sub(r"\s+", " ", text).strip()  # Normalize spaces
+    return text
+
+def save_to_csv(data, filename):
+    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=["title", "lyrics"])
+        writer.writeheader()
+        for song in data:
+            writer.writerow(song)
+
+
 if __name__ == "__main__":
-    scraped = search_songs()
+    artist = "Taylor Swift"
+    lyrics_data = fetch_all_lyrics(artist)
+
+    # Clean the lyrics and prepare data for CSV
+    cleaned_data = []
+    for song in lyrics_data:
+        cleaned_data.append({
+            "title": song["title"],
+            "lyrics": clean_lyrics(song["lyrics"])
+        })
+
+    # Save the cleaned data to a CSV file
+    save_to_csv(cleaned_data, "taylor_swift_lyrics.csv")
+    print("Lyrics saved to taylor_swift_lyrics.csv.")
