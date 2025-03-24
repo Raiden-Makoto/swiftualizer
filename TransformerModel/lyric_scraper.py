@@ -3,9 +3,14 @@ import csv
 import re # regex
 from bs4 import BeautifulSoup # web scraping
 
-GENIUS_CLIENT_ID = "3QDIwshW18t8pJfqOBaFLGVnRFjJYy6ha7Uwt1hD4CzPmWLeF2XDIix6nfawjet9"
-GENIUS_CLIENT_SECRET = "0liJ0RxGqls0qZjNGDH8PDZ9aiM8pL3T_wbe99tdzK-O9lZjsdw_5nRHQQJP1fq0Rsv1FvFNKm3JxaIejQApjA"
-GENIUS_API_TOKEN = "NlUyo-mjbksV45dGf6mppJ987fqhZqfaVxWJCYwCzlG628wH2raWzx7DhYHlNGWR"
+import os
+from dotenv import load_dotenv # for loading environment variables from a.env file
+
+# Load environment variables from the .env file
+load_dotenv()
+
+# Retrieve the API token from environment variables
+GENIUS_API_TOKEN = os.getenv("GENIUS_API_TOKEN")  # It fetches the API key from the .env file
 
 def search_songs(artist: str="Taylor Swift"):
     base_url = "https://api.genius.com"
@@ -21,4 +26,3 @@ def search_songs(artist: str="Taylor Swift"):
     
 if __name__ == "__main__":
     scraped = search_songs()
-    print(scraped)
