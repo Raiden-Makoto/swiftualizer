@@ -13,9 +13,12 @@ import pyaudio
 
 class Terrain(object):
     def __init__(self, audio_file_path: str):
+        pygame.mixer.init()
+
         self.audio_file_path = audio_file_path
         self.audio_data, self.sr = librosa.load(audio_file_path, sr=44100, mono=True)
         self.frame_idx = 0
+        self.sound = pygame.mixer.Sound(self.audio_file_path)
 
         self.app = QApplication(sys.argv)
         self.window = gl.GLViewWidget()
@@ -33,6 +36,17 @@ class Terrain(object):
         self.CHUNK = len(self.xpoints) * len(self.ypoints)
         self.noise = OpenSimplex(seed=324) # Perlin Noise object
         verts, faces, colors = self.mesh() # create mesh
+
+        # Stream Object
+        self.p = pyaudio.PyAudio()
+        self.stream = self.p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=44100,
+            input=True,
+            output=True,
+            frames_per_buffer=self.CHUNK,
+        )
 
         self.main_mesh = gl.GLMeshItem(
             facces=faces,
@@ -55,7 +69,7 @@ class Terrain(object):
             chungus = np.pad(chungus, (0, self.CHUNK - len(chungus)))
 
         self.frame_idx += self.CHUNK
-        return  chungus * 9.39  # Scale waveform height
+        return  chungus * 12.65  # Scale waveform height
     
     def mesh(self, offset: float=0.0, wf_data=None):
         if wf_data is None: wf_data = np.ones((len(self.xpoints), len(self.ypoints)))  # Default flat terrain
@@ -115,6 +129,7 @@ class Terrain(object):
         timer = QtCore.QTimer()
         timer.timeout.connect(self.update_mesh)
         timer.start(round(frametime)) # no floats allowed, unfrtunately
+        self.sound.play()  # Start audio playback
         self.start()
 
 if __name__ == '__main__':
