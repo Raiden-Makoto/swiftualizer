@@ -6,6 +6,11 @@ from pyqtgraph.Qt import QtCore, QtGui
 from PyQt6.QtWidgets import QApplication
 import sys
 
+# This is for streaming the song
+import struct
+import pygame
+import pyaudio
+
 class Terrain(object):
     def __init__(self, audio_file_path: str):
         self.audio_file_path = audio_file_path
