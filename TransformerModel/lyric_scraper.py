@@ -16,9 +16,13 @@ GENIUS_API_TOKEN = os.getenv("GENIUS_API_TOKEN")  # It fetches the API key from 
 def generate_song_url(artist, song_title):
     """Generate a Genius URL based on artist and song title, handling special formats."""
     artist = artist.lower().replace(" ", "-")  # Convert spaces to dashes
-    song_title = song_title.lower()
-    song_title = re.sub(r"[^\w\s']", "", song_title)
-    song_title = song_title.replace(" ", "-").replace("(", "").replace(")", "").replace("'", "")
+    song_title = song_title.lower()  # Convert to lowercase
+    song_title = re.sub(r"\(feat\.? [^)]+\)", "", song_title)  # Remove (feat. artist)
+    song_title = song_title.replace('&', 'and') 
+    song_title = re.sub(r"[^\w\s'-]", "", song_title)  # Keep letters, numbers, spaces, hyphens, and apostrophes
+    song_title = song_title.replace(" ", "-").replace("'", "")  # Convert spaces to hyphens, remove apostrophes
+    song_title = re.sub(r"--+", "-", song_title)  # Ensure no double hyphens
+    song_title = song_title.strip("-")
     song_url = f"https://genius.com/{artist}-{song_title}-lyrics"
     return song_url
 
